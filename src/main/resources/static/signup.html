@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Biometric Voter Registration</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .camera-box {
+            background: rgba(15, 23, 42, 0.7);
+            border: 2px dashed rgba(99, 102, 241, 0.5);
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        video, canvas {
+            width: 100%;
+            max-width: 260px;
+            height: 195px;
+            border-radius: 10px;
+            object-fit: cover;
+            background: #000;
+        }
+        .capture-status {
+            font-size: 13px;
+            color: #38bdf8;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="max-width: 480px;">
+        <h2>Biometric Registration</h2>
+        <p class="subtitle">Enroll your identity with Facial Recognition ID</p>
+        
+        <input type="text" id="name" placeholder="Full Legal Name">
+        <input type="email" id="email" placeholder="Valid Email Address">
+        <input type="password" id="password" placeholder="Choose a Password">
+
+        <!-- Facial Capture Section -->
+        <div class="camera-box">
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="snapshotCanvas" style="display: none;"></canvas>
+            <div id="captureStatus" class="capture-status">Position your face in front of the camera</div>
+            <button type="button" onclick="captureFace()" class="btn-cyan" style="margin-top: 10px; padding: 8px 16px; font-size: 13px; width: auto;">Capture Face Biometric</button>
+        </div>
+
+        <button onclick="handleSignup()" class="btn-primary">Register Voter</button>
+        
+        <p style="margin-top: 20px; font-size: 14px; color: #94a3b8;">
+            Already registered? <a href="login.html" style="color: #38bdf8; text-decoration: none; font-weight: 500;">Login here</a>
+        </p>
+    </div>
+
+    <script>
+        let capturedFaceData = null;
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('snapshotCanvas');
+
+        // Start Webcam
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+                video.srcObject = stream;
+            } catch (err) {
+                document.getElementById('captureStatus').innerText = "Camera permission denied or camera not found.";
+                document.getElementById('captureStatus').style.color = "#ef4444";
+            }
+        }
+
+        function captureFace() {
+            if (!video.srcObject) {
+                alert("Please allow camera access first!");
+                return;
+            }
+            const context = canvas.getContext('2d');
+            canvas.width = 320;
+            canvas.height = 240;
+            context.drawImage(video, 0, 0, 320, 240);
+            capturedFaceData = canvas.toDataURL('image/jpeg', 0.7);
+
+            document.getElementById('captureStatus').innerText = "Face Biometric Captured Successfully!";
+            document.getElementById('captureStatus').style.color = "#10b981";
+        }
+
+        async function handleSignup() {
+            const name = document.getElementById("name").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value.trim();
+
+            if (!name || !email || !password) {
+                alert("Please fill in all personal details!");
+                return;
+            }
+
+            if (!capturedFaceData) {
+                alert("Please click 'Capture Face Biometric' to enroll your face!");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        name: name, 
+                        email: email, 
+                        password: password, 
+                        faceData: capturedFaceData 
+                    })
+                });
+
+                const msg = await res.text();
+                if (res.ok) {
+                    alert(msg);
+                    window.location.href = "login.html";
+                } else {
+                    alert(msg);
+                }
+            } catch (err) {
+                alert("Server connection failed.");
+            }
+        }
+
+        startCamera();
+    </script>
+</body>
+</html>

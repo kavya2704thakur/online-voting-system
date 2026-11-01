@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Online Voting Portal - Biometric Security</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Biometric Modal Overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-box {
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 18px;
+            padding: 25px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+        #verifyVideo {
+            width: 100%;
+            max-width: 280px;
+            height: 210px;
+            border-radius: 12px;
+            background: #000;
+            object-fit: cover;
+            border: 2px solid #38bdf8;
+            margin: 15px auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="max-width: 550px;">
+        <h2>Electoral Ballot</h2>
+        <p id="welcomeUser" style="margin-bottom: 22px; color: #38bdf8; font-weight: 600; font-size: 15px;"></p>
+        
+        <div id="candidatesList">Loading candidates...</div>
+
+        <button onclick="window.location.href='results.html'" class="btn-cyan" style="margin-top: 20px;">View Live Results</button>
+        <button onclick="logout()" class="btn-secondary" style="margin-top: 10px;">Logout</button>
+    </div>
+
+    <!-- Biometric Verification Modal -->
+    <div id="biometricModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 style="color: #38bdf8; font-size: 18px; margin-bottom: 5px;">Biometric Verification</h3>
+            <p style="font-size: 13px; color: #94a3b8;">Look directly into camera to authenticate ballot</p>
+            
+            <video id="verifyVideo" autoplay playsinline></video>
+            
+            <div id="scanStatus" style="font-size: 14px; color: #e2e8f0; margin-bottom: 15px; font-weight: 500;">
+                Initializing Face Scanner...
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button onclick="confirmBiometricVote()" class="btn-success">Verify & Cast Vote</button>
+                <button onclick="closeModal()" class="btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const user = JSON.parse(sessionStorage.getItem("currentUser"));
+        let selectedCandidateId = null;
+        let verifyStream = null;
+
+        if (!user) {
+            alert("Session expired, please login.");
+            window.location.href = "login.html";
+        } else {
+            document.getElementById("welcomeUser").innerText = "Logged in as: " + user.name;
+            loadCandidates();
+        }
+
+        async function loadCandidates() {
+            try {
+                const res = await fetch('/api/candidates');
+                const candidates = await res.json();
+                const listDiv = document.getElementById("candidatesList");
+                listDiv.innerHTML = "";
+
+                if (candidates.length === 0) {
+                    listDiv.innerHTML = "<p style='color: #94a3b8;'>No candidates available.</p>";
+                    return;
+                }
+
+                candidates.forEach(cand => {
+                    const card = document.createElement("div");
+                    card.className = "candidate-card";
+                    card.innerHTML = `
+                        <div class="candidate-info">
+                            <h3>${cand.name}</h3>
+                            <span>Party: ${cand.party}</span>
+                        </div>
+                        <button class="vote-btn" onclick="initiateVote(${cand.id})">Vote</button>
+                    `;
+                    listDiv.appendChild(card);
+                });
+            } catch (err) {
+                document.getElementById("candidatesList").innerText = "Failed to load candidates.";
+            }
+        }
+
+        async function initiateVote(candidateId) {
+            if (user.hasVoted) {
+                alert("You have already voted! Multiple votes are strictly prohibited.");
+                return;
+            }
+
+            selectedCandidateId = candidateId;
+            document.getElementById("biometricModal").style.display = "flex";
+            const videoElem = document.getElementById("verifyVideo");
+
+            try {
+                verifyStream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+                videoElem.srcObject = verifyStream;
+                document.getElementById("scanStatus").innerText = "Face detected. Ready to authenticate.";
+            } catch (e) {
+                document.getElementById("scanStatus").innerText = "Camera access required for voting.";
+            }
+        }
+
+        function closeModal() {
+            if (verifyStream) {
+                verifyStream.getTracks().forEach(track => track.stop());
+            }
+            document.getElementById("biometricModal").style.display = "none";
+        }
+
+        async function confirmBiometricVote() {
+            document.getElementById("scanStatus").innerText = "Verifying Facial Identity with Database...";
+            document.getElementById("scanStatus").style.color = "#38bdf8";
+
+            // Simulating optical verification handshake
+            setTimeout(async () => {
+                try {
+                    const res = await fetch(`/api/vote?userId=${user.id}&candidateId=${selectedCandidateId}`, {
+                        method: 'POST'
+                    });
+                    const msg = await res.text();
+                    closeModal();
+                    alert(msg);
+                    if (res.ok) {
+                        user.hasVoted = true;
+                        sessionStorage.setItem("currentUser", JSON.stringify(user));
+                        window.location.href = "results.html";
+                    }
+                } catch (err) {
+                    alert("Error submitting vote.");
+                    closeModal();
+                }
+            }, 1200);
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = "login.html";
+        }
+    </script>
+</body>
+</html>

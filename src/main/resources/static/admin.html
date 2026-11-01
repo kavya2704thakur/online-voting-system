@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - Election Control</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-card {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 20px;
+            border-radius: 14px;
+            margin-bottom: 18px;
+            text-align: left;
+        }
+        .candidate-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        if (sessionStorage.getItem("isAdminAuthenticated") !== "true") {
+            alert("Unauthorized! You must log in as Administrator.");
+            window.location.replace("admin-login.html");
+        }
+    </script>
+
+    <div class="container" style="max-width: 620px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0; font-size: 22px;">Admin Control Center</h2>
+            <button onclick="adminLogout()" class="btn-secondary" style="width: auto; padding: 6px 14px; font-size: 13px;">Logout</button>
+        </div>
+        
+        <div class="admin-card">
+            <h3 style="font-size: 16px; margin-bottom: 12px; color: #38bdf8;">Enroll New Candidate</h3>
+            <input type="text" id="candName" placeholder="Candidate Full Name">
+            <input type="text" id="candParty" placeholder="Party / Affiliation">
+            <button onclick="addCandidate()" class="btn-success">Add Candidate</button>
+        </div>
+
+        <div class="admin-card">
+            <h3 style="font-size: 16px; margin-bottom: 12px; color: #38bdf8;">Manage Candidates</h3>
+            <div id="adminCandidateList">Loading...</div>
+        </div>
+
+        <div class="admin-card" style="border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05);">
+            <h3 style="color: #f87171; font-size: 16px; margin-bottom: 6px;">Danger Zone</h3>
+            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 12px;">Clears all tally counters and restores voting eligibility for all voters.</p>
+            <button onclick="resetElection()" class="btn-danger">Reset Entire Election</button>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 15px;">
+            <button onclick="window.location.href='results.html'" class="btn-cyan">View Results</button>
+            <button onclick="window.location.href='login.html'" class="btn-secondary">Voter Login</button>
+        </div>
+    </div>
+
+    <script>
+        function adminLogout() {
+            sessionStorage.removeItem("isAdminAuthenticated");
+            window.location.href = "admin-login.html";
+        }
+
+        async function loadCandidates() {
+            try {
+                const res = await fetch('/api/candidates');
+                const list = await res.json();
+                const container = document.getElementById("adminCandidateList");
+                container.innerHTML = "";
+
+                if (list.length === 0) {
+                    container.innerHTML = "<p style='color: #94a3b8;'>No candidates enrolled.</p>";
+                    return;
+                }
+
+                list.forEach(c => {
+                    const div = document.createElement("div");
+                    div.className = "candidate-item";
+                    div.innerHTML = `
+                        <div>
+                            <strong style="color: #f8fafc;">${c.name}</strong> 
+                            <small style="color: #94a3b8;">(${c.party})</small>
+                            <span style="margin-left: 8px; font-size: 12px; color: #38bdf8;">[${c.voteCount} votes]</span>
+                        </div>
+                        <button onclick="deleteCandidate(${c.id})" class="btn-danger" style="width: auto; padding: 5px 12px; font-size: 12px;">Delete</button>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (e) {
+                document.getElementById("adminCandidateList").innerText = "Failed to load candidates.";
+            }
+        }
+
+        async function addCandidate() {
+            const name = document.getElementById("candName").value.trim();
+            const party = document.getElementById("candParty").value.trim();
+            if (!name || !party) {
+                alert("Please fill both candidate name and party!");
+                return;
+            }
+
+            const res = await fetch('/api/admin/candidate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, party })
+            });
+
+            if (res.ok) {
+                alert("Candidate added successfully!");
+                document.getElementById("candName").value = "";
+                document.getElementById("candParty").value = "";
+                loadCandidates();
+            } else {
+                alert("Failed to add candidate.");
+            }
+        }
+
+        async function deleteCandidate(id) {
+            if (!confirm("Are you sure you want to delete this candidate?")) return;
+
+            const res = await fetch(`/api/admin/candidate/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                alert("Candidate deleted!");
+                loadCandidates();
+            } else {
+                alert("Failed to delete candidate.");
+            }
+        }
+
+        async function resetElection() {
+            if (!confirm("WARNING: This will reset all candidate vote counts to 0. Proceed?")) return;
+
+            try {
+                const res = await fetch('/api/admin/reset', { method: 'POST' });
+                const msg = await res.text();
+                alert(msg);
+                if (res.ok) {
+                    window.location.reload();
+                }
+            } catch (err) {
+                alert("Failed to reset election. Server unreachable.");
+            }
+        }
+
+        loadCandidates();
+    </script>
+</body>
+</html>

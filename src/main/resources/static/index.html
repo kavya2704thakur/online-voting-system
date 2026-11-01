@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Secure Biometric Voting Portal</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .portal-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 25px;
+        }
+        .portal-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #f8fafc;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.25s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .portal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        .voter-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(56, 189, 248, 0.25));
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+        .results-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(52, 211, 153, 0.25));
+            border-color: rgba(16, 185, 129, 0.4);
+        }
+        .admin-card-link {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.2));
+            border-color: rgba(239, 68, 68, 0.35);
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="max-width: 500px; text-align: center;">
+        <h2>Smart Voting System</h2>
+        <p class="subtitle">AI Biometric Secured Electronic Ballot</p>
+
+        <div class="portal-grid">
+            <!-- Voter Sign In / Vote -->
+            <a href="login.html" class="portal-btn voter-card">
+                <span>Voter Login & Ballot</span>
+                <span>➔</span>
+            </a>
+
+            <!-- New Voter Registration -->
+            <a href="signup.html" class="portal-btn" style="background: rgba(255, 255, 255, 0.05);">
+                <span>New Voter Biometric Registration</span>
+                <span>➔</span>
+            </a>
+
+            <!-- Live Results & Chart -->
+            <a href="results.html" class="portal-btn results-card">
+                <span>Live Results & Bar Chart</span>
+                <span>➔</span>
+            </a>
+
+            <!-- Admin Center -->
+            <a href="admin-login.html" class="portal-btn admin-card-link">
+                <span>Admin Control Panel</span>
+                <span>➔</span>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

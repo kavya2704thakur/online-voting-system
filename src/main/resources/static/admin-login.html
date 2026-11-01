@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Login - Online Voting System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container" style="max-width: 420px;">
+        <h2>Admin Authentication</h2>
+        <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Authorized election personnel only</p>
+        
+        <input type="text" id="adminUser" placeholder="Admin Username" style="margin-bottom: 12px;">
+        <input type="password" id="adminPass" placeholder="Admin Secret Key" style="margin-bottom: 16px;">
+        
+        <button onclick="handleAdminLogin()" style="background: #e65100; margin-bottom: 12px;">Unlock Admin Panel</button>
+        <button onclick="window.location.href='login.html'" style="background: #6c757d;">Back to Voter Login</button>
+    </div>
+
+    <script>
+        async function handleAdminLogin() {
+            const username = document.getElementById("adminUser").value.trim();
+            const password = document.getElementById("adminPass").value.trim();
+
+            if (!username || !password) {
+                alert("Please enter both username and password!");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (res.ok) {
+                    sessionStorage.setItem("isAdminAuthenticated", "true");
+                    window.location.href = "admin.html";
+                } else {
+                    const msg = await res.text();
+                    alert(msg || "Invalid Admin Credentials!");
+                }
+            } catch (err) {
+                alert("Connection failed. Ensure the backend server is active.");
+            }
+        }
+    </script>
+</body>
+</html>

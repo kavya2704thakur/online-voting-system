@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Voter Login - Online Voting System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Voter Login</h2>
+        <p class="subtitle">Access your digital ballot box</p>
+        
+        <input type="email" id="email" placeholder="Enter your registered email">
+        <input type="password" id="password" placeholder="Enter your password">
+        
+        <button onclick="handleLogin()" class="btn-primary" style="margin-top: 5px;">Login to Vote</button>
+        
+        <p style="margin-top: 20px; font-size: 14px; color: #94a3b8;">
+            New voter? <a href="signup.html" style="color: #38bdf8; text-decoration: none; font-weight: 500;">Register here</a>
+        </p>
+        <p style="margin-top: 10px; font-size: 13px;">
+            <a href="admin-login.html" style="color: #64748b; text-decoration: none;">Admin Access &rarr;</a>
+        </p>
+    </div>
+
+    <script>
+        async function handleLogin() {
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value.trim();
+
+            if (!email || !password) {
+                alert("Please fill in both fields!");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (res.ok) {
+                    const user = await res.json();
+                    sessionStorage.setItem("currentUser", JSON.stringify(user));
+                    window.location.href = "voting.html";
+                } else {
+                    const error = await res.text();
+                    alert(error || "Invalid Credentials!");
+                }
+            } catch (err) {
+                alert("Failed to connect to the server.");
+            }
+        }
+    </script>
+</body>
+</html>

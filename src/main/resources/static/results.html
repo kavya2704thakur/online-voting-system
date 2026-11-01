@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Live Election Results & Analytics</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js CDN for Visual Bar Graph -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-box {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 20px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .stats-summary {
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 12px;
+            font-size: 15px;
+            color: #38bdf8;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="max-width: 650px;">
+        <h2>Live Election Results</h2>
+        <p class="subtitle">Real-time candidate tally & comparative bar graph</p>
+        
+        <div id="summaryBox" class="stats-summary">Fetching total votes...</div>
+
+        <!-- Dynamic Visual Bar Chart -->
+        <div class="chart-box">
+            <canvas id="voteChart" height="220"></canvas>
+        </div>
+
+        <div id="resultsContainer">Loading candidates tally...</div>
+
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+            <button onclick="fetchResults()" class="btn-cyan">Refresh Data</button>
+            <button onclick="window.location.href='voting.html'" class="btn-secondary">Back to Voting</button>
+        </div>
+    </div>
+
+    <script>
+        let voteChartInstance = null;
+
+        async function fetchResults() {
+            try {
+                const res = await fetch('/api/candidates');
+                const candidates = await res.json();
+                
+                const container = document.getElementById("resultsContainer");
+                const summaryBox = document.getElementById("summaryBox");
+                container.innerHTML = "";
+
+                if (!candidates || candidates.length === 0) {
+                    container.innerHTML = "<p style='color:#94a3b8;'>No candidate enrolled.</p>";
+                    summaryBox.innerText = "Total Ballots Cast: 0";
+                    return;
+                }
+
+                const totalVotes = candidates.reduce((sum, c) => sum + (c.voteCount || 0), 0);
+                summaryBox.innerText = `Total Ballots Cast: ${totalVotes}`;
+
+                // Extract data for Bar Graph
+                const labels = candidates.map(c => `${c.name} (${c.party})`);
+                const voteCounts = candidates.map(c => c.voteCount || 0);
+
+                // Modern Bar Colors for different parties
+                const partyColors = [
+                    'rgba(239, 68, 68, 0.85)',   // Red
+                    'rgba(59, 130, 246, 0.85)',  // Blue
+                    'rgba(16, 185, 129, 0.85)',  // Green
+                    'rgba(245, 158, 11, 0.85)',  // Yellow/Orange
+                    'rgba(168, 85, 247, 0.85)'   // Purple
+                ];
+
+                // Render or Update Chart.js Bar Graph
+                const ctx = document.getElementById('voteChart').getContext('2d');
+                if (voteChartInstance) {
+                    voteChartInstance.destroy();
+                }
+
+                voteChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Total Votes Received',
+                            data: voteCounts,
+                            backgroundColor: partyColors.slice(0, candidates.length),
+                            borderColor: 'rgba(255, 255, 255, 0.2)',
+                            borderWidth: 1,
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1,
+                                    color: '#94a3b8'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.08)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: '#f8fafc',
+                                    font: { family: 'Poppins', size: 12 }
+                                },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+
+            } catch (err) {
+                document.getElementById("resultsContainer").innerText = "Failed to load live data.";
+            }
+        }
+
+        fetchResults();
+    </script>
+</body>
+</html>
